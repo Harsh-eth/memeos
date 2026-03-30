@@ -1,0 +1,61 @@
+{
+  "templates": [
+    {
+      "name": "drake",
+      "path": "images/drake.png",
+      "uppercase": true,
+      "text_regions": [
+        {
+          "x": 0.52,
+          "y": 0.06,
+          "w": 0.44,
+          "h": 0.38
+        },
+        {
+          "x": 0.52,
+          "y": 0.54,
+          "w": 0.44,
+          "h": 0.38
+        }
+      ]
+    },
+    {
+      "name": "classic",
+      "path": "images/classic.png",
+      "uppercase": true,
+      "text_regions": [
+        {
+          "x": 0.05,
+          "y": 0.02,
+          "w": 0.9,
+          "h": 0.2
+        },
+        {
+          "x": 0.05,
+          "y": 0.78,
+          "w": 0.9,
+          "h": 0.2
+        }
+      ]
+    },
+    {
+      "name": "two_panel",
+      "path": "images/two_panel.png",
+      "uppercase": true,
+      "text_regions": [
+        {
+          "x": 0.08,
+          "y": 0.08,
+          "w": 0.84,
+          "h": 0.32
+        },
+        {
+          "x": 0.08,
+          "y": 0.58,
+          "w": 0.84,
+          "h": 0.32
+        }
+      ]
+    }
+  ]
+}
