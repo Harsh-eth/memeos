@@ -1,5 +1,6 @@
 import type { FeedItemApi, GenerateResponse } from "../api";
 import { MEME_PREVIEW_H, MEME_PREVIEW_W, LANDING_MATRIX_SEED } from "../constants/memeCanvas";
+import { layoutText } from "../lib/textLayout";
 import { MatrixPreview } from "./MatrixPreview";
 
 type OutputPanelProps = {
@@ -15,6 +16,43 @@ type OutputPanelProps = {
   showDetails?: boolean;
   onToggleDetails?: () => void;
 };
+
+function CaptionLines({
+  text,
+  width,
+}: {
+  text: string;
+  width: number;
+}) {
+  const t = (text || "").trim();
+  if (!t) return null;
+
+  const maxWidth = Math.max(120, width - 40);
+  const fontSizes = [32, 28, 24] as const;
+
+  let chosen = layoutText(t, `bold ${fontSizes[0]}px Impact`, maxWidth, 36);
+  for (const px of fontSizes) {
+    const r = layoutText(t, `bold ${px}px Impact`, maxWidth, 36);
+    // Prefer fewer lines when possible; keep first that is <= 2 lines.
+    if (Array.isArray(r?.lines) && r.lines.length <= 2) {
+      chosen = r;
+      break;
+    }
+    chosen = r;
+  }
+
+  return (
+    <div className="ws-cap">
+      {(Array.isArray(chosen?.lines) ? chosen.lines : []).map(
+        (line: { text: string }, i: number) => (
+          <div key={i} className="ws-cap__line">
+            {line.text}
+          </div>
+        ),
+      )}
+    </div>
+  );
+}
 
 export function OutputPanel({
   visible,
@@ -33,6 +71,12 @@ export function OutputPanel({
   const showHit =
     typeof memeScore === "number" && memeScore >= 8 && Boolean(imageSrc);
 
+  const captions = (detailsMeta as any)?.captions as
+    | { top_text?: string; bottom_text?: string }
+    | undefined;
+  const top = captions?.top_text ?? "";
+  const bottom = captions?.bottom_text ?? "";
+
   return (
     <div className="ws-output">
       {showHit ? (
@@ -42,11 +86,21 @@ export function OutputPanel({
       ) : null}
       <div className="ws-frame">
         {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt="Generated meme"
-            className="ws-meme-img ws-meme-img--in"
-          />
+          <div className="ws-frame__stack">
+            <img
+              src={imageSrc}
+              alt="Generated meme"
+              className="ws-meme-img ws-meme-img--in"
+            />
+            <div className="ws-frame__overlay" aria-hidden="true">
+              <div className="ws-frame__top">
+                <CaptionLines text={top} width={MEME_PREVIEW_W} />
+              </div>
+              <div className="ws-frame__bottom">
+                <CaptionLines text={bottom} width={MEME_PREVIEW_W} />
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="ws-preview-wrap">
             {loading ? (
