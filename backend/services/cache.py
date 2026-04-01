@@ -21,10 +21,11 @@ class ImageCache:
         width: int,
         height: int,
         mode: str = "personal",
+        caption_enabled: bool = True,
     ) -> str:
         composite = (
             f"{prompt_normalized}:{tone}:{template_name}:"
-            f"{int(width)}:{int(height)}:{mode}"
+            f"{int(width)}:{int(height)}:{mode}:{'cap1' if caption_enabled else 'cap0'}"
         )
         return hashlib.sha256(composite.encode("utf-8")).hexdigest()
 
@@ -36,8 +37,9 @@ class ImageCache:
         width: int,
         height: int,
         mode: str = "personal",
+        caption_enabled: bool = True,
     ) -> bytes | None:
-        key = self.cache_key(prompt_normalized, tone, template_name, width, height, mode)
+        key = self.cache_key(prompt_normalized, tone, template_name, width, height, mode, caption_enabled)
         path = self._root / f"{key}.png"
         with self._lock:
             if path.is_file():
@@ -53,8 +55,9 @@ class ImageCache:
         height: int,
         png_bytes: bytes,
         mode: str = "personal",
+        caption_enabled: bool = True,
     ) -> None:
-        key = self.cache_key(prompt_normalized, tone, template_name, width, height, mode)
+        key = self.cache_key(prompt_normalized, tone, template_name, width, height, mode, caption_enabled)
         path = self._root / f"{key}.png"
         with self._lock:
             path.write_bytes(png_bytes)

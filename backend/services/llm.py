@@ -1,41 +1,61 @@
+from __future__ import annotations
+
+import asyncio
 import json
 from typing import Any
 
-from openai import OpenAI
+import replicate
 
 from config import settings
 
+_client = replicate.Client(api_token=settings.REPLICATE_API_TOKEN)
+
+
+def _strip_code_fences(text: str) -> str:
+    t = (text or "").strip()
+    if t.startswith("```"):
+        parts = t.split("```")
+        if len(parts) >= 2:
+            t = parts[1].strip()
+    return t
+
 
 async def chat_json(system: str, user: str) -> dict[str, Any]:
-    """Call OpenAI for a JSON object; falls back to heuristic parse on failure."""
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY not set")
+    """Replicate Claude Opus: return JSON object parsed from model output."""
 
-    client = OpenAI(api_key=settings.openai_api_key)
-    resp = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        temperature=settings.openai_temperature_json,
-        response_format={"type": "json_object"},
-    )
-    text = resp.choices[0].message.content or "{}"
-    return json.loads(text)
+    prompt = f"{system}\n\n{user}".strip()
+
+    def _run() -> str:
+        out = _client.run(
+            "anthropic/claude-opus-4.6",
+            input={"prompt": prompt, "max_tokens": 1024, "temperature": 0.7},
+        )
+        if isinstance(out, str):
+            return out
+        try:
+            return "".join(out).strip()
+        except Exception:
+            return str(out).strip()
+
+    text = _strip_code_fences(await asyncio.to_thread(_run))
+    return json.loads(text or "{}")
 
 
 async def chat_text(system: str, user: str) -> str:
-    if not settings.openai_api_key:
-        raise RuntimeError("OPENAI_API_KEY not set")
+    """Replicate Claude Opus: return plain text."""
 
-    client = OpenAI(api_key=settings.openai_api_key)
-    resp = client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        temperature=settings.openai_temperature_text,
-    )
-    return (resp.choices[0].message.content or "").strip()
+    prompt = f"{system}\n\n{user}".strip()
+
+    def _run() -> str:
+        out = _client.run(
+            "anthropic/claude-opus-4.6",
+            input={"prompt": prompt, "max_tokens": 1024, "temperature": 0.8},
+        )
+        if isinstance(out, str):
+            return out
+        try:
+            return "".join(out).strip()
+        except Exception:
+            return str(out).strip()
+
+    return _strip_code_fences(await asyncio.to_thread(_run))

@@ -1,209 +1,160 @@
 from __future__ import annotations
 
-import io
-import json
-import re
-from collections import Counter
+from collections import Counter, defaultdict, deque
 from typing import Any
 
-from PIL import Image
-
-from agents.caption_agent import CaptionAgent
-from agents.emotion_agent import EmotionAgent
 from agents.mode import MemeMode
-from agents.renderer import RendererAgent
-from agents.scenario_agent import ScenarioAgent
-from agents.score_agent import ScoreAgent
-from agents.template_agent import TemplateAgent
-from config import settings
+from agents.replicate_llm import generate_meme_text
 from services.memory_store import MemoryStore
 
-memory_store = MemoryStore()
-
-_scenario_agent = ScenarioAgent()
-_emotion_agent = EmotionAgent()
-_caption_agent = CaptionAgent()
-_score_agent = ScoreAgent()
-_template_agent = TemplateAgent()
-_renderer = RendererAgent()
-
-
-def _template_catalog() -> list[dict[str, Any]]:
-    root = settings.templates_dir
-    idx = root / "index.json"
-    if not idx.is_file():
-        return []
-    raw = json.loads(idx.read_text(encoding="utf-8"))
-    out: list[dict[str, Any]] = []
-    for item in raw.get("templates", []):
-        path = root / item["path"]
-        if not path.is_file():
-            continue
-        out.append({**item, "abs_path": str(path.resolve())})
-    return out
-
-
-def _resolve_template_dict(template_name: str) -> dict[str, Any]:
-    """Map logical template id to a loaded template record; fallback if asset missing."""
-    catalog = _template_catalog()
-    if not catalog:
-        raise FileNotFoundError(
-            "No templates loaded. Run: python scripts/seed_templates.py from the backend folder."
-        )
-    name = (template_name or "").strip()
-    for entry in catalog:
-        if entry.get("name") == name:
-            return dict(entry)
-    for fallback in ("classic", "drake", "two_panel"):
-        for entry in catalog:
-            if entry.get("name") == fallback:
-                return dict(entry)
-    return dict(catalog[0])
-
-
-_GENERIC_SNIPPETS = (
-    "when you",
-    "that moment",
-    "be like",
-)
-
-
-def _line_has_generic_phrase(s: str) -> bool:
-    low = s.lower()
-    return any(g in low for g in _GENERIC_SNIPPETS)
-
-
-def _excessive_word_repetition(text: str) -> bool:
-    words = [w.lower() for w in re.findall(r"\b\w+\b", text) if len(w) > 2]
-    if len(words) < 3:
-        return False
-    top = Counter(words).most_common(1)[0][1]
-    return top >= 3
-
-
-def _captions_invalid(caps: dict[str, Any]) -> bool:
-    top = str(caps.get("top_text", "")).strip()
-    bottom = str(caps.get("bottom_text", "")).strip()
-    if len(top) < 5 or len(bottom) < 5:
-        return True
-    if _line_has_generic_phrase(top) or _line_has_generic_phrase(bottom):
-        return True
-    if _excessive_word_repetition(top) or _excessive_word_repetition(bottom):
-        return True
-    return False
+_memory = MemoryStore()
+_structure_counts: dict[str, Counter[str]] = defaultdict(Counter)
+_recent_structures: dict[str, deque[str]] = defaultdict(lambda: deque(maxlen=5))
 
 
 def _normalize_mode(mode: str | None) -> str:
-    m = (mode or MemeMode.PERSONAL).strip().lower()
+    if not mode:
+        return MemeMode.PERSONAL
+    m = mode.strip().lower()
     return m if m in MemeMode.ALL else MemeMode.PERSONAL
 
 
-def _build_memory_text(mode: str) -> str:
-    top_memes = memory_store.get_top(mode, 3)
-    if not top_memes:
+def _detect_structure(top: str, bottom: str) -> str:
+    t = (top or "").strip().lower()
+    b = (bottom or "").strip().lower()
+
+    if ("expectation" in t and "reality" in b) or ("expectation" in b and "reality" in t):
+        return "expectation vs reality"
+
+    if " vs " in t or " vs " in b or "vs." in t or "vs." in b:
+        return "comparison"
+
+    if t.startswith("me") and b.startswith("me"):
+        return "self hypocrisy"
+
+    if ":" in t or ":" in b:
+        return "setup → punchline"
+
+    return "default"
+
+
+def _structure_hint_for_mode(mode: str) -> str:
+    c = _structure_counts.get(mode)
+    if not c:
         return ""
+    top = c.most_common(1)
+    if not top:
+        return ""
+    return top[0][0]
+
+
+def _dominant_structure(mode: str) -> str:
+    recent = _recent_structures.get(mode)
+    if not recent:
+        return ""
+    c = Counter(recent)
+    struct, n = c.most_common(1)[0]
+    return struct if n >= 3 else ""
+
+
+def _score_meme(top: str, bottom: str, structure: str) -> int:
+    score = 6
+    tw = len((top or "").split())
+    bw = len((bottom or "").split())
+
+    if tw <= 8 and bw <= 8:
+        score += 1
+
+    tset = set((top or "").lower().split())
+    bset = set((bottom or "").lower().split())
+    if tset and bset:
+        overlap = len(tset & bset) / max(1, min(len(tset), len(bset)))
+        if overlap <= 0.5:
+            score += 1
+
+    if structure != "default":
+        score += 1
+
+    return max(6, min(10, score))
+
+
+def _examples_block(mode: str) -> str:
+    mem = _memory.get_top(mode, limit=3)
+    if not mem:
+        return ""
+
     lines: list[str] = []
-    for mem in top_memes:
-        c = mem.get("captions")
-        if not isinstance(c, dict):
+    for m in mem:
+        caps = m.get("captions") if isinstance(m.get("captions"), dict) else {}
+        top = str(caps.get("top_text", "")).strip()
+        bottom = str(caps.get("bottom_text", "")).strip()
+        if not top and not bottom:
             continue
-        lines.append(
-            "Example:\n"
-            f"Top: {c.get('top_text', '')}\n"
-            f"Bottom: {c.get('bottom_text', '')}\n"
-        )
-    return "".join(lines).strip()
+        lines.append(f"Top: {top}")
+        lines.append(f"Bottom: {bottom}")
+        lines.append("")
+
+    block = "\n".join(lines).strip()
+    if not block:
+        return ""
+    return f"Examples of good memes:\n{block}"
 
 
-async def _one_caption_candidate(
-    scenario: str, emotion: str, m: str, memory_examples: str
-) -> dict[str, str]:
-    c = await _caption_agent.generate(scenario, emotion, m, memory_examples)
-    if _captions_invalid(c):
-        c = await _caption_agent.generate(scenario, emotion, m, memory_examples)
-    return c
-
-
-async def _render_best(
-    scenario: str,
-    emotion: str,
-    captions: dict[str, str],
-    template_id: str,
-    m: str,
-    best_score: int,
-) -> tuple[bytes, dict[str, Any]]:
-    tpl = _resolve_template_dict(template_id)
-    try:
-        raw_png = _renderer.render(tpl, captions["top_text"], captions["bottom_text"])
-    except OSError as e:
-        raise FileNotFoundError(str(e)) from e
-
-    im = Image.open(io.BytesIO(raw_png)).convert("RGB")
-    im = im.resize(
-        (settings.meme_output_width, settings.meme_output_height),
-        Image.Resampling.LANCZOS,
-    )
-    buf = io.BytesIO()
-    im.save(buf, format="PNG", optimize=True)
-    image_bytes = buf.getvalue()
-
-    metadata: dict[str, Any] = {
-        "scenario": scenario,
-        "emotion": emotion,
-        "captions": captions,
-        "template": template_id,
-        "mode": m,
-        "score": best_score,
-    }
-    return image_bytes, metadata
-
-
-async def _run_engine_attempt(
-    topic: str, m: str, *, allow_scenario_rerun: bool
-) -> tuple[bytes, dict[str, Any]]:
-    memory_text = _build_memory_text(m)
-    scenario = await _scenario_agent.generate(topic, m, memory_text)
-    emotion = await _emotion_agent.detect(scenario)
-
-    candidates: list[dict[str, str]] = []
-    for _ in range(2):
-        candidates.append(
-            await _one_caption_candidate(scenario, emotion, m, memory_text)
-        )
-
-    best: dict[str, str] | None = None
-    best_score = -1
-    for c in candidates:
-        s = await _score_agent.score(scenario, c)
-        if s > best_score:
-            best_score = s
-            best = c
-
-    if best is None:
-        best = candidates[-1]
-        best_score = max(best_score, 1)
-
-    if best_score < 6 and allow_scenario_rerun:
-        return await _run_engine_attempt(topic, m, allow_scenario_rerun=False)
-
-    if best_score >= 6 and best is not None:
-        memory_store.add(
-            {
-                "topic": topic,
-                "scenario": scenario,
-                "emotion": emotion,
-                "captions": dict(best),
-                "score": best_score,
-                "mode": m,
-            }
-        )
-
-    template_id = _template_agent.select(emotion)
-    return await _render_best(scenario, emotion, best, template_id, m, best_score)
-
-
-async def run_meme_engine(
-    topic: str, mode: str = MemeMode.PERSONAL
-) -> tuple[bytes, dict[str, Any]]:
+async def run_meme_engine(topic: str, mode: str = MemeMode.PERSONAL) -> dict[str, Any]:
     m = _normalize_mode(mode)
-    return await _run_engine_attempt(topic, m, allow_scenario_rerun=True)
+
+    examples = _examples_block(m)
+    dominant = _dominant_structure(m)
+    structure_hint = dominant or _structure_hint_for_mode(m)
+
+    data = await generate_meme_text(
+        topic,
+        m,
+        examples=examples,
+        structure_hint=structure_hint,
+        force_structure=bool(dominant),
+    )
+
+    top_text = str(data.get("top_text", "")).strip()
+    bottom_text = str(data.get("bottom_text", "")).strip()
+    structure = _detect_structure(top_text, bottom_text)
+    score = _score_meme(top_text, bottom_text, structure)
+
+    meme_type = str(data.get("meme_type", "original") or "original").strip().lower()
+    if meme_type not in ("template", "original"):
+        meme_type = "original"
+    template_name = data.get("template_name", None)
+    if not (isinstance(template_name, str) and template_name.strip()):
+        template_name = None
+    image_search_query = str(data.get("image_search_query", "") or "").strip()
+    image_idea = str(data.get("image_idea", "") or "").strip()
+
+    _structure_counts[m][structure] += 1
+    _recent_structures[m].append(structure)
+    _memory.add(
+        {
+            "user_prompt": topic,
+            "captions": {"top_text": top_text, "bottom_text": bottom_text},
+            "mode": m,
+            "structure": structure,
+            "score": score,
+            "meme_type": meme_type,
+            "template_name": template_name,
+        }
+    )
+
+    return {
+        "scenario": str(data["scenario"]).strip(),
+        "captions": {
+            "top_text": top_text,
+            "bottom_text": bottom_text,
+        },
+        "mode": m,
+        "emotion": "neutral",
+        "structure": structure,
+        "score": score,
+        "meme_type": meme_type,
+        "template_name": template_name,
+        "image_search_query": image_search_query,
+        "image_idea": image_idea,
+    }

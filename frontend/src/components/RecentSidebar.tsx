@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { fetchFeed, feedItemTitle, formatTimeAgo, type FeedItemApi } from "../api";
+import {
+  fetchFeed,
+  feedItemImageSrc,
+  feedItemTitle,
+  formatTimeAgo,
+  type FeedItemApi,
+} from "../api";
 import { useMemeUi } from "../context/MemeUiContext";
 
 type RecentSidebarProps = {
@@ -31,7 +37,7 @@ export function RecentSidebar({ tick }: RecentSidebarProps) {
 
   return (
     <aside className="ref-sidebar">
-      <h2 className="ref-sidebar__title">RECENT</h2>
+      <h2 className="ref-sidebar__title">Recent</h2>
       {failed ? (
         <p className="ref-sidebar__err">api unreachable — start backend :8000</p>
       ) : null}
@@ -45,11 +51,12 @@ export function RecentSidebar({ tick }: RecentSidebarProps) {
             >
               <span className="ref-sidebar__thumb">
                 <img
-                  src={`data:image/png;base64,${item.image_base64}`}
+                  src={feedItemImageSrc(item)}
                   alt=""
-                  width={28}
-                  height={28}
+                  width={40}
+                  height={40}
                   className="ref-sidebar__thumb-img"
+                  loading="lazy"
                 />
               </span>
               <span className="ref-sidebar__body">

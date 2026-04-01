@@ -36,8 +36,12 @@ def inflight_key_for(
     width: int,
     height: int,
     mode: str = "personal",
+    caption_enabled: bool = True,
 ) -> str:
-    raw = f"{prompt}\x00{tone}\x00{template_name}\x00{int(width)}\x00{int(height)}\x00{mode}"
+    raw = (
+        f"{prompt}\x00{tone}\x00{template_name}\x00{int(width)}\x00{int(height)}\x00{mode}\x00"
+        f"{'cap1' if caption_enabled else 'cap0'}"
+    )
     h = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     return f"{INFLIGHT_PREFIX}{h}"
 

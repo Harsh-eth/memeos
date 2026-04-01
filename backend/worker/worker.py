@@ -11,7 +11,6 @@ BACKEND_ROOT = Path(__file__).resolve().parent.parent
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-import torch
 from config import settings
 from fastapi import HTTPException
 from services.generation_pipeline import run_meme_generation
@@ -41,15 +40,15 @@ async def _process_job(
     prompt: str,
     plan: dict,
     template: dict,
-    device: torch.device,
     inflight_key: str | None,
     mode: str | None,
+    caption_enabled: bool,
 ) -> None:
     redis = await get_redis()
     try:
         try:
             png, meta = await run_meme_generation(
-                prompt, plan, template, device=device, mode=mode
+                prompt, plan, template, mode=mode, caption_enabled=caption_enabled
             )
             b64 = base64.b64encode(png).decode("ascii")
             await store_result(redis, request_id, image_b64=b64, meta=meta)
@@ -65,13 +64,10 @@ async def _process_job(
 
 async def _run() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    if not torch.cuda.is_available():
-        raise RuntimeError("GPU required but not available")
-    device = torch.device("cuda")
     _ensure_templates()
     await init_redis(settings.redis_url)
     redis = await get_redis()
-    logging.info("meme worker up device=%s", device)
+    logging.info("meme worker up")
     while True:
         try:
             job = await pop_job(redis, timeout=5)
@@ -85,7 +81,8 @@ async def _run() -> None:
             inflight_key = str(ifk) if ifk else None
             mode = job.get("mode")
             mode_s = str(mode).strip().lower() if mode else None
-            await _process_job(rid, prompt, plan, template, device, inflight_key, mode_s)
+            caption_enabled = bool(job.get("caption_enabled", True))
+            await _process_job(rid, prompt, plan, template, inflight_key, mode_s, caption_enabled)
         except asyncio.CancelledError:
             break
         except Exception:

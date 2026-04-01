@@ -17,10 +17,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     REDIS_URL: str
-    MEMEOS_CLIENT_TOKEN: str
-    MEMEOS_HMAC_SECRET: str
-    CLAUDE_API_KEY: str
+    MEMEOS_CLIENT_TOKEN: str | None = None
+    MEMEOS_HMAC_SECRET: str | None = None
+    REPLICATE_API_TOKEN: str
     """HMAC secret for POST /generate-meme body signing (must match frontend)."""
+
+    # Imgflip (template memes)
+    IMGFLIP_USERNAME: str | None = None
+    IMGFLIP_PASSWORD: str | None = None
 
     generate_max_per_ip_per_day: int = 5
 
@@ -29,7 +33,7 @@ class Settings(BaseSettings):
 
     burst_interval_seconds: float = 3.0
 
-    generate_timeout_seconds: float = 10.0
+    generate_timeout_seconds: float = 25.0
     """API wait for worker result (seconds), enforced with asyncio.wait_for."""
 
     trust_proxy_for_ip: bool = False
@@ -67,8 +71,16 @@ class Settings(BaseSettings):
         return self.MEMEOS_HMAC_SECRET
 
     @property
-    def claude_api_key(self) -> str:
-        return self.CLAUDE_API_KEY
+    def replicate_api_token(self) -> str:
+        return self.REPLICATE_API_TOKEN
+
+    @property
+    def imgflip_username(self) -> str | None:
+        return self.IMGFLIP_USERNAME
+
+    @property
+    def imgflip_password(self) -> str | None:
+        return self.IMGFLIP_PASSWORD
 
     meme_jobs_max_queued: int = 100
     """Reject new jobs with 503 when meme_jobs queue length exceeds this."""

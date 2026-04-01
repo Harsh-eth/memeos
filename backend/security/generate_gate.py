@@ -95,10 +95,7 @@ def _check_content_type(request: Request) -> None:
 
 def _check_client_token(request: Request) -> None:
     if not settings.memeos_client_token:
-        raise HTTPException(
-            status_code=503,
-            detail="generate disabled: MEMEOS_CLIENT_TOKEN not configured",
-        )
+        return
     tok = request.headers.get(HEADER_TOKEN)
     if tok != settings.memeos_client_token:
         raise HTTPException(status_code=403, detail="forbidden: client token")
@@ -130,6 +127,9 @@ def enforce_generate_restrictions(request: Request) -> None:
     Call from a dependency before body is trusted.
     """
     if request.method != "POST":
+        return
+    # Dev mode: if MEMEOS_CLIENT_TOKEN is unset, skip generate-only header gating.
+    if not settings.memeos_client_token:
         return
     _check_content_type(request)
     _check_client_token(request)

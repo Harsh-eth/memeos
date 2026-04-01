@@ -20,6 +20,8 @@ export function WorkspacePage() {
     setPrompt,
     mode,
     setMode,
+    captionEnabled,
+    setCaptionEnabled,
     generate,
     regenerate,
     imageDataUrl,
@@ -92,6 +94,28 @@ export function WorkspacePage() {
             disabled={loading}
             rows={5}
           />
+
+          <div className="ws-row" style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
+            <span className="ws-label" style={{ margin: 0 }}>
+              captions
+            </span>
+            <button
+              type="button"
+              className={`ws-mode-btn${captionEnabled ? " ws-mode-btn--active" : ""}`}
+              onClick={() => setCaptionEnabled(true)}
+              disabled={loading}
+            >
+              on
+            </button>
+            <button
+              type="button"
+              className={`ws-mode-btn${!captionEnabled ? " ws-mode-btn--active" : ""}`}
+              onClick={() => setCaptionEnabled(false)}
+              disabled={loading}
+            >
+              off
+            </button>
+          </div>
 
           <button
             type="button"
