@@ -7,14 +7,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-BACKEND_ROOT = Path(__file__).resolve().parent.parent
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-from config import settings
+from backend.config import settings
 from fastapi import HTTPException
-from services.generation_pipeline import run_meme_generation
-from services.redis_client import (
+from backend.services.generation_pipeline import run_meme_generation
+from backend.services.redis_client import (
     close_redis,
     delete_inflight_if_present,
     get_redis,

@@ -7,7 +7,7 @@ from typing import Any
 
 import redis.asyncio as aioredis
 
-from config import settings
+from backend.config import settings
 
 MEME_JOBS_HIGH = "meme_jobs_high"
 MEME_JOBS_LOW = "meme_jobs_low"

@@ -1,8 +1,8 @@
 import json
 from typing import Any
 
-from config import settings
-from services.llm import chat_json
+from backend.config import settings
+from backend.services.llm import chat_json
 
 
 CAPTION_SYSTEM = """You are the MemeOS Caption Agent. Output ONLY valid JSON:

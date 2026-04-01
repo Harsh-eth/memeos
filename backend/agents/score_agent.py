@@ -5,8 +5,8 @@ import json
 import re
 from typing import Any
 
-from config import settings
-from services.llm import chat_json
+from backend.config import settings
+from backend.services.llm import chat_json
 
 _SCORE_SYSTEM = """You are a strict meme critic. Output ONLY valid JSON with one key:
 {"score": <integer>}

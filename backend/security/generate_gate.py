@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request
 
-from config import settings
+from backend.config import settings
 
 HEADER_TOKEN = "x-memeos-client-token"
 HEADER_INTENT = "x-memeos-intent"

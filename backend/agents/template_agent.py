@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from config import settings
+from backend.config import settings
 
 _EMOTION_TO_TEMPLATE: dict[str, str] = {
     "regret": "wojak_cry",

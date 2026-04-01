@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agents.mode import MemeMode
-from config import settings
-from services.llm import chat_json
+from backend.agents.mode import MemeMode
+from backend.config import settings
+from backend.services.llm import chat_json
 
 _MODE_HINTS: dict[str, str] = {
     MemeMode.PERSONAL: (

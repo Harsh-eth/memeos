@@ -12,9 +12,9 @@ import logging
 import time
 import re
 
-from agents.mode import MemeMode
-from config import settings
-from services.meme_engine import run_meme_engine
+from backend.agents.mode import MemeMode
+from backend.config import settings
+from backend.services.meme_engine import run_meme_engine
 
 FONT_PATH = "./Impact.ttf"
 _tlog = logging.getLogger("memeos.template_debug")

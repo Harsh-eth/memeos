@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections import Counter, defaultdict, deque
 from typing import Any
 
-from agents.mode import MemeMode
-from agents.replicate_llm import generate_meme_text
-from services.memory_store import MemoryStore
+from backend.agents.mode import MemeMode
+from backend.agents.replicate_llm import generate_meme_text
+from backend.services.memory_store import MemoryStore
 
 _memory = MemoryStore()
 _structure_counts: dict[str, Counter[str]] = defaultdict(Counter)

@@ -5,7 +5,7 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
-from config import settings
+from backend.config import settings
 
 
 def _find_bold_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

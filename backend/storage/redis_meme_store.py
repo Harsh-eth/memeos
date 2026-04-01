@@ -7,7 +7,7 @@ from typing import Any
 
 import redis.asyncio as aioredis
 
-from config import settings
+from backend.config import settings
 
 
 FEED_LIST_KEY = "memeos:feed"

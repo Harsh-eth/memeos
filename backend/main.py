@@ -17,19 +17,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from agents.feed_agent import FeedAgent
-from agents.mode import MemeMode
-from agents.planner import PlannerAgent
-from agents.template_agent import TemplateAgent
-from config import settings
-from security.burst_limit import BurstLimiter
-from security.daily_limit import DailyIPLimiter
-from security.generate_gate import enforce_generate_restrictions, get_client_ip
-from security.global_daily_cap import GlobalDailyCap
-from security.replay_guard import ReplayGuard
-from security.signature import verify_signature
-from services.cache import ImageCache
-from services.redis_client import (
+from backend.agents.feed_agent import FeedAgent
+from backend.agents.mode import MemeMode
+from backend.agents.planner import PlannerAgent
+from backend.agents.template_agent import TemplateAgent
+from backend.config import settings
+from backend.security.burst_limit import BurstLimiter
+from backend.security.daily_limit import DailyIPLimiter
+from backend.security.generate_gate import enforce_generate_restrictions, get_client_ip
+from backend.security.global_daily_cap import GlobalDailyCap
+from backend.security.replay_guard import ReplayGuard
+from backend.security.signature import verify_signature
+from backend.services.cache import ImageCache
+from backend.services.redis_client import (
     close_redis,
     get_redis,
     get_result,
@@ -41,16 +41,16 @@ from services.redis_client import (
     wait_result_ready,
     redis_client,
 )
-from storage.feed_store import FeedStore
-from storage.redis_meme_store import get_feed as redis_get_feed
-from storage.redis_meme_store import get_history as redis_get_history
-from storage.redis_meme_store import get_top as redis_get_top
-from storage.redis_meme_store import meme_image_path
-from storage.redis_meme_store import get_total_generated as redis_get_total_generated
-from storage.redis_meme_store import store_meme as redis_store_meme
-from trending import get_trending
-from utils.content_filter import assert_prompt_allowed
-from utils.prompt_validator import validate_and_normalize_prompt
+from backend.storage.feed_store import FeedStore
+from backend.storage.redis_meme_store import get_feed as redis_get_feed
+from backend.storage.redis_meme_store import get_history as redis_get_history
+from backend.storage.redis_meme_store import get_top as redis_get_top
+from backend.storage.redis_meme_store import meme_image_path
+from backend.storage.redis_meme_store import get_total_generated as redis_get_total_generated
+from backend.storage.redis_meme_store import store_meme as redis_store_meme
+from backend.trending import get_trending
+from backend.utils.content_filter import assert_prompt_allowed
+from backend.utils.prompt_validator import validate_and_normalize_prompt
 
 log = logging.getLogger("memeos.generate")
 

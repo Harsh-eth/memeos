@@ -6,7 +6,7 @@ from typing import Any
 
 import replicate
 
-from config import settings
+from backend.config import settings
 
 _client = replicate.Client(api_token=settings.REPLICATE_API_TOKEN)
 

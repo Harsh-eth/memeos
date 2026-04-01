@@ -2,12 +2,12 @@ import asyncio
 import random
 from typing import Any, Awaitable, Callable
 
-from agents.caption import CaptionAgent
-from agents.planner import PlannerAgent
-from agents.renderer import RendererAgent
-from agents.template_agent import TemplateAgent
-from config import settings
-from storage.feed_store import FeedStore
+from backend.agents.caption import CaptionAgent
+from backend.agents.planner import PlannerAgent
+from backend.agents.renderer import RendererAgent
+from backend.agents.template_agent import TemplateAgent
+from backend.config import settings
+from backend.storage.feed_store import FeedStore
 
 TrendingProvider = Callable[[], list[str]]
 

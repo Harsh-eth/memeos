@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 
-from agents.mode import MemeMode
-from config import settings
-from services.llm import chat_json
+from backend.agents.mode import MemeMode
+from backend.config import settings
+from backend.services.llm import chat_json
 
 _BASE_RULES = """
 Output ONLY valid JSON with a single key:

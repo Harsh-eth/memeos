@@ -8,7 +8,7 @@ import re
 import httpx
 import replicate
 
-from config import settings
+from backend.config import settings
 
 client = replicate.Client(api_token=settings.REPLICATE_API_TOKEN)
 

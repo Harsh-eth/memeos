@@ -2,8 +2,8 @@ import hashlib
 import json
 from typing import Any
 
-from config import settings
-from services.llm import chat_json
+from backend.config import settings
+from backend.services.llm import chat_json
 
 
 PLANNER_SYSTEM = """You are the MemeOS Planner Agent. Given a user intent, output ONLY valid JSON with keys:
