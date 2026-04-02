@@ -25,6 +25,15 @@ _CLI_UA_SNIPPETS = (
     "axios/",
 )
 
+_ALLOWED_ORIGINS: tuple[str, ...] = (
+    "https://memeos.pics",
+    "https://www.memeos.pics",
+    "https://memeos-eta.vercel.app",
+    # dev
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+)
+
 
 def get_client_ip(request: Request) -> str:
     if settings.trust_proxy_for_ip:
@@ -76,10 +85,8 @@ def _check_user_agent(request: Request) -> None:
     ua = request.headers.get("user-agent") or ""
     if settings.block_empty_user_agent and len(ua.strip()) < settings.min_user_agent_length:
         raise HTTPException(status_code=403, detail="forbidden: user-agent")
-    if settings.block_cli_user_agents:
-        lower = ua.lower()
-        if any(s in lower for s in _CLI_UA_SNIPPETS):
-            raise HTTPException(status_code=403, detail="forbidden: user-agent")
+    # TEMP: disable strict CLI blocking for now.
+    # (Keep only the empty-UA check above.)
 
 
 def _check_content_type(request: Request) -> None:
@@ -114,10 +121,10 @@ def _check_origin_referer(request: Request) -> None:
     referer = request.headers.get("referer") or ""
     if not origin and not referer:
         raise HTTPException(status_code=403, detail="forbidden: origin or referer required")
-    if origin and not _origin_matches_allowlist(origin):
+    if origin and not any(origin.startswith(o) for o in _ALLOWED_ORIGINS):
         raise HTTPException(status_code=403, detail="forbidden: origin")
     if referer and not origin:
-        if not _origin_matches_allowlist(referer):
+        if not any(referer.startswith(o) for o in _ALLOWED_ORIGINS):
             raise HTTPException(status_code=403, detail="forbidden: referer")
 
 

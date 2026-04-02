@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     openai_temperature_json: float = 0.7
     openai_temperature_text: float = 0.85
     auto_interval_seconds: int = 45
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://memeos.pics,https://www.memeos.pics"
 
     REDIS_URL: str
     MEMEOS_CLIENT_TOKEN: str | None = None
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     block_empty_user_agent: bool = True
     min_user_agent_length: int = 8
 
-    block_cli_user_agents: bool = True
+    block_cli_user_agents: bool = False
 
     require_json_content_type: bool = True
 

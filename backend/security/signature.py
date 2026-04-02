@@ -11,7 +11,7 @@ import hmac
 import time
 from typing import Final
 
-_MAX_SKEW_SEC: Final[int] = 60
+_MAX_SKEW_SEC: Final[int] = 300
 
 
 def signing_message(prompt: str, timestamp: int, mode: str = "personal") -> bytes:

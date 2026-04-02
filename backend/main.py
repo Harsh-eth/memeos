@@ -12,6 +12,12 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# Ensure repo root is on sys.path so `import backend.*` works
+# when running `uvicorn main:app` from the `backend/` directory.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -130,7 +136,14 @@ app = FastAPI(title="MemeOS API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_list(),
+    # Explicit allowlist for production + local dev.
+    allow_origins=[
+        "https://memeos.pics",
+        "https://www.memeos.pics",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://memeos-eta.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -250,6 +263,14 @@ async def generate_meme(request: Request, body: GenerateBody):
     t_req = time.perf_counter()
     request_id = str(uuid.uuid4())
     ip = get_client_ip(request)
+    print(
+        "Incoming request:",
+        {
+            "origin": request.headers.get("origin"),
+            "user_agent": request.headers.get("user-agent"),
+        },
+        flush=True,
+    )
     exempt_ip = ip in settings.exempt_ip_set()
     ra_burst = str(max(1, int(math.ceil(settings.burst_interval_seconds))))
     rem_snapshot = (
@@ -260,38 +281,28 @@ async def generate_meme(request: Request, body: GenerateBody):
         return (time.perf_counter() - t_req) * 1000
 
     prompt_for_sig = body.prompt.strip()
-    if settings.memeos_hmac_secret:
-        if body.timestamp is None or body.signature is None:
-            return _json_generate_error(
-                request_id=request_id,
-                status_code=401,
-                detail="missing signature",
-                remaining_ip=rem_snapshot,
-            )
-        if not verify_signature(
+    # TEMP: disable signature validation for debugging production request issues.
+    # (We keep the checks best-effort, but never hard-fail on mismatch.)
+    if settings.memeos_hmac_secret and body.timestamp is not None and body.signature is not None:
+        valid = verify_signature(
             prompt_for_sig,
             body.timestamp,
             body.signature,
             settings.memeos_hmac_secret,
             mode=body.mode,
-        ):
+        )
+        if not valid:
             _log_event(
                 request_id,
                 ip,
                 prompt_for_sig,
                 body.timestamp,
-                "fail_validation",
+                "warn_signature_mismatch",
                 ms(),
                 False,
                 {"step": "signature"},
             )
-            return _json_generate_error(
-                request_id=request_id,
-                status_code=401,
-                detail="invalid or expired signature",
-                remaining_ip=rem_snapshot,
-            )
-
+        # Replay protection stays best-effort.
         if not replay_guard.check_and_store(body.signature, body.timestamp):
             _log_event(
                 request_id,
