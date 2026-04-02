@@ -1077,6 +1077,25 @@ body {
   margin-top: 10px;
 }
 
+a.ref-buy__mono,
+.ref-buy__mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  color: #2563eb;
+  text-decoration: none;
+  text-transform: lowercase;
+}
+
+.ref-landing__buy {
+  margin-top: 12px;
+}
+
+a.ref-buy__mono:hover,
+.ref-buy__mono:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 a.ref-action-btn.ref-landing__cta {
   text-decoration: none;
   display: inline-flex;

@@ -2,6 +2,8 @@ import { NavLink } from "react-router-dom";
 import { MEME_PREVIEW_H, MEME_PREVIEW_W, LANDING_MATRIX_SEED } from "../constants/memeCanvas";
 import { MatrixPreview } from "../components/MatrixPreview";
 
+const MEMEOS_BUY_URL = "https://jup.ag/tokens/FzoyNVEaSavbTHzidJgmBa3EQZ4AFvARhr3rPm9vBAGS";
+
 export function LandingPage() {
   return (
     <main className="ref-main ref-landing">
@@ -23,6 +25,12 @@ export function LandingPage() {
           open workspace
         </NavLink>
       </div>
+
+      <p className="ref-landing__buy">
+        <a className="ref-buy__mono" href={MEMEOS_BUY_URL} target="_blank" rel="noopener noreferrer">
+          buy memEOS
+        </a>
+      </p>
     </main>
   );
 }

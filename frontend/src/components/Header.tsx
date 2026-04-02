@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 const GITHUB_URL = import.meta.env.VITE_GITHUB_URL ?? "https://github.com";
+const MEMEOS_BUY_URL = "https://jup.ag/tokens/FzoyNVEaSavbTHzidJgmBa3EQZ4AFvARhr3rPm9vBAGS";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "ref-header__link ref-header__link--active" : "ref-header__link";
@@ -31,6 +32,15 @@ export function Header() {
           className="ref-header__link"
         >
           github
+        </a>
+        <a
+          href={MEMEOS_BUY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ref-buy__mono"
+          aria-label="buy MEMEOS on Jupiter"
+        >
+          buy memEOS
         </a>
       </nav>
     </header>
