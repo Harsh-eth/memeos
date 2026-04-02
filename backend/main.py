@@ -136,15 +136,15 @@ app = FastAPI(title="MemeOS API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    # Explicit allowlist for production + local dev.
-    allow_origins=[
-        "https://memeos.pics",
-        "https://www.memeos.pics",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://memeos-eta.vercel.app",
-    ],
-    allow_credentials=True,
+    # PRODUCTION FIX:
+    # Some deployments (e.g. Nginx/Cloudflare) already inject CORS headers.
+    # If both layers add `Access-Control-Allow-Origin`, the browser rejects the
+    # response with "contains multiple values ... but only one is allowed".
+    #
+    # So we disable our own header emission here and rely on the upstream
+    # proxy/CDN for CORS headers.
+    allow_origins=[],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=[

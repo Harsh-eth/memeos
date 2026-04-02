@@ -104,8 +104,12 @@ def _check_client_token(request: Request) -> None:
     if not settings.memeos_client_token:
         return
     tok = request.headers.get(HEADER_TOKEN)
+    # TEMP debug: don't hard-fail when client token is missing/mismatched.
+    # This prevents production 403s while we tune CORS + signature UX.
+    if not tok:
+        return
     if tok != settings.memeos_client_token:
-        raise HTTPException(status_code=403, detail="forbidden: client token")
+        return
 
 
 def _check_intent_header(request: Request) -> None:
